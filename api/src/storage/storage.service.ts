@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import type { Readable } from 'node:stream';
 import { S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
@@ -15,8 +14,6 @@ interface R2Config {
 }
 
 interface UploadStreamOptions {
-  subject: string;
-  importId: string;
   pathSegments: string[];
   body: Readable;
   contentType: string;
@@ -42,11 +39,7 @@ export class StorageService {
 
   async uploadStream(options: UploadStreamOptions): Promise<UploadedObject> {
     const config = this.getConfig();
-    const key = this.createObjectKey(
-      options.subject,
-      options.importId,
-      options.pathSegments,
-    );
+    const key = this.createObjectKey(options.pathSegments);
     const upload = new Upload({
       client: this.getClient(config),
       params: {
@@ -68,24 +61,10 @@ export class StorageService {
     };
   }
 
-  createObjectKey(
-    subject: string,
-    importId: string,
-    pathSegments: string[],
-  ): string {
-    const subjectLabel = this.sanitizeSegment(subject).slice(0, 48);
-    const subjectHash = createHash('sha256')
-      .update(subject)
-      .digest('hex')
-      .slice(0, 16);
+  createObjectKey(pathSegments: string[]): string {
     const safePath = pathSegments.map((segment) => this.sanitizeSegment(segment));
 
-    return [
-      'google-drive-import',
-      `${subjectLabel}-${subjectHash}`,
-      importId,
-      ...safePath,
-    ].join('/');
+    return ['google-drive', ...safePath].join('/');
   }
 
   private getClient(config: R2Config): S3Client {

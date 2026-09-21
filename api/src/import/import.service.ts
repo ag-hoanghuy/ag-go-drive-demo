@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import type { Readable } from 'node:stream';
 import { Injectable } from '@nestjs/common';
 import {
@@ -41,11 +40,10 @@ export class ImportService {
     const entries = selectedItem.isFolder
       ? await this.googleDriveService.collectFolderFiles(subject, selectedItem)
       : [{ item: selectedItem, pathSegments: [selectedItem.name] }];
-    const importId = randomUUID();
     const outcomes = await this.mapWithConcurrency(
       entries,
       IMPORT_CONCURRENCY,
-      (entry) => this.importFile(subject, importId, entry),
+      (entry) => this.importFile(subject, entry),
     );
     const files = outcomes.flatMap((outcome) =>
       outcome.file ? [outcome.file] : [],
@@ -66,7 +64,6 @@ export class ImportService {
 
   private async importFile(
     subject: string,
-    importId: string,
     entry: GoogleDriveFileEntry,
   ): Promise<FileImportOutcome> {
     if (this.googleDriveService.isGoogleNativeFile(entry.item)) {
@@ -87,8 +84,6 @@ export class ImportService {
         entry.item.id,
       );
       const uploadedObject = await this.storageService.uploadStream({
-        subject,
-        importId,
         pathSegments: entry.pathSegments,
         body: stream,
         contentType: entry.item.mimeType || 'application/octet-stream',
@@ -142,4 +137,3 @@ export class ImportService {
     return results;
   }
 }
-
