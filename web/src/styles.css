@@ -1,0 +1,105 @@
+:root {
+  color: #172033;
+  background: #f4f7fb;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: #f4f7fb;
+}
+
+.content {
+  width: min(1040px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 64px 0;
+}
+
+.configuration-error {
+  width: min(680px, calc(100% - 32px));
+  margin: 0 auto;
+  padding-top: 64px;
+}
+
+.configuration-error h2.ant-typography {
+  margin: 0;
+}
+
+.page-heading {
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.page-heading h1.ant-typography {
+  margin: 0 0 4px;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+}
+
+.ant-card {
+  height: 100%;
+  border: 1px solid #e5eaf2;
+  box-shadow: 0 8px 24px rgb(30 55 90 / 6%);
+}
+
+.full-width {
+  width: 100%;
+}
+
+.page-alert {
+  margin-bottom: 20px;
+}
+
+.drive-browser-loading {
+  display: grid;
+  min-height: 220px;
+  place-items: center;
+}
+
+.drive-browser-list {
+  max-height: 460px;
+  overflow-y: auto;
+}
+
+.drive-browser-list .ant-list-item {
+  padding-inline: 16px;
+}
+
+.drive-browser-list .selected-item {
+  background: #eaf4ff;
+}
+
+.drive-browser-list .ant-list-item-meta-title .ant-btn-link,
+.breadcrumb-button {
+  height: auto;
+  padding: 0;
+}
+
+.drive-item-icon,
+.drive-item-fallback-icon {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+}
+
+.drive-item-icon {
+  object-fit: contain;
+}
+
+@media (max-width: 575px) {
+  .content {
+    padding: 36px 0;
+  }
+}
