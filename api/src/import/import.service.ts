@@ -28,22 +28,28 @@ export class ImportService {
   ) {}
 
   async importGoogleDriveItem(
-    subject: string,
+    demoSessionId: string,
     itemId: string,
   ): Promise<GoogleDriveImportResult> {
     this.storageService.ensureConfigured();
 
-    const selectedItem = await this.googleDriveService.getItem(subject, itemId);
+    const selectedItem = await this.googleDriveService.getItem(
+      demoSessionId,
+      itemId,
+    );
     const type = selectedItem.mimeType === GOOGLE_DRIVE_FOLDER_MIME_TYPE
       ? 'folder'
       : 'file';
     const entries = selectedItem.isFolder
-      ? await this.googleDriveService.collectFolderFiles(subject, selectedItem)
+      ? await this.googleDriveService.collectFolderFiles(
+          demoSessionId,
+          selectedItem,
+        )
       : [{ item: selectedItem, pathSegments: [selectedItem.name] }];
     const outcomes = await this.mapWithConcurrency(
       entries,
       IMPORT_CONCURRENCY,
-      (entry) => this.importFile(subject, entry),
+      (entry) => this.importFile(demoSessionId, entry),
     );
     const files = outcomes.flatMap((outcome) =>
       outcome.file ? [outcome.file] : [],
@@ -63,7 +69,7 @@ export class ImportService {
   }
 
   private async importFile(
-    subject: string,
+    demoSessionId: string,
     entry: GoogleDriveFileEntry,
   ): Promise<FileImportOutcome> {
     if (this.googleDriveService.isGoogleNativeFile(entry.item)) {
@@ -80,7 +86,7 @@ export class ImportService {
 
     try {
       stream = await this.googleDriveService.downloadFile(
-        subject,
+        demoSessionId,
         entry.item.id,
       );
       const uploadedObject = await this.storageService.uploadStream({

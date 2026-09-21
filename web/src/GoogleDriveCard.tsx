@@ -3,7 +3,6 @@ import type { AxiosInstance } from 'axios';
 import { Alert, Button, Card, Space, Spin, Typography } from 'antd';
 
 type ConnectionState =
-  | 'idle'
   | 'checking'
   | 'connected'
   | 'disconnected'
@@ -11,7 +10,6 @@ type ConnectionState =
 
 interface GoogleDriveCardProps {
   apiClient: AxiosInstance;
-  isAuthenticated: boolean;
   onConnectionChange: (connected: boolean) => void;
 }
 
@@ -30,22 +28,15 @@ function getCallbackResult(): 'connected' | 'error' | null {
 
 export function GoogleDriveCard({
   apiClient,
-  isAuthenticated,
   onConnectionChange,
 }: GoogleDriveCardProps) {
   const [connectionState, setConnectionState] =
-    useState<ConnectionState>('idle');
+    useState<ConnectionState>('checking');
   const [actionLoading, setActionLoading] = useState(false);
   const [callbackResult] = useState(getCallbackResult);
 
   const loadStatus = useCallback(
     async (signal?: AbortSignal): Promise<void> => {
-      if (!isAuthenticated) {
-        setConnectionState('idle');
-        onConnectionChange(false);
-        return;
-      }
-
       setConnectionState('checking');
 
       try {
@@ -64,7 +55,7 @@ export function GoogleDriveCard({
         }
       }
     },
-    [apiClient, isAuthenticated, onConnectionChange],
+    [apiClient, onConnectionChange],
   );
 
   useEffect(() => {
@@ -125,20 +116,14 @@ export function GoogleDriveCard({
           />
         )}
 
-        {!isAuthenticated && (
-          <Typography.Text type="secondary">
-            Đăng nhập để kết nối Google Drive.
-          </Typography.Text>
-        )}
-
-        {isAuthenticated && connectionState === 'checking' && (
+        {connectionState === 'checking' && (
           <Space>
             <Spin size="small" />
             <Typography.Text>Đang kiểm tra kết nối...</Typography.Text>
           </Space>
         )}
 
-        {isAuthenticated && connectionState === 'connected' && (
+        {connectionState === 'connected' && (
           <>
             <Typography.Text>Google Drive đã kết nối</Typography.Text>
             <Button danger loading={actionLoading} onClick={() => void disconnect()}>
@@ -147,7 +132,7 @@ export function GoogleDriveCard({
           </>
         )}
 
-        {isAuthenticated && connectionState === 'disconnected' && (
+        {connectionState === 'disconnected' && (
           <>
             <Typography.Text>Google Drive chưa kết nối</Typography.Text>
             <Button
@@ -160,7 +145,7 @@ export function GoogleDriveCard({
           </>
         )}
 
-        {isAuthenticated && connectionState === 'error' && (
+        {connectionState === 'error' && (
           <>
             <Alert
               type="error"

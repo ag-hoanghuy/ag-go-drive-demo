@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AuthModule } from '../auth/auth.module';
 import { GoogleDriveController } from './google-drive.controller';
 import { GoogleDriveOAuthService } from './google-drive-oauth.service';
 import { GoogleDriveService } from './google-drive.service';
@@ -8,7 +7,6 @@ import { GoogleOAuthClientFactory } from './google-oauth-client.factory';
 import { GoogleOAuthStateStore } from './google-oauth-state.store';
 
 @Module({
-  imports: [AuthModule],
   controllers: [GoogleDriveController],
   providers: [
     GoogleDriveOAuthService,

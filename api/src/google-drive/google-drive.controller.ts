@@ -1,18 +1,15 @@
 import {
+  BadRequestException,
   Controller,
   Delete,
   Get,
   HttpCode,
   HttpStatus,
-  BadRequestException,
   Param,
   Query,
   Redirect,
-  UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '../auth/auth.guard';
-import { CurrentUser } from '../auth/current-user.decorator';
-import type { AuthenticatedUser } from '../auth/auth.types';
+import { DemoSessionId } from '../demo-session/demo-session-id.decorator';
 import { GoogleDriveOAuthService } from './google-drive-oauth.service';
 import { GoogleDriveService } from './google-drive.service';
 import type {
@@ -34,11 +31,10 @@ export class GoogleDriveController {
   ) {}
 
   @Get('connect')
-  @UseGuards(AuthGuard)
   connect(
-    @CurrentUser() user: AuthenticatedUser,
+    @DemoSessionId() demoSessionId: string,
   ): GoogleAuthorizationResponse {
-    return this.googleDriveOAuth.createAuthorizationUrl(user.sub);
+    return this.googleDriveOAuth.createAuthorizationUrl(demoSessionId);
   }
 
   @Get('callback')
@@ -66,40 +62,38 @@ export class GoogleDriveController {
   }
 
   @Get('status')
-  @UseGuards(AuthGuard)
   status(
-    @CurrentUser() user: AuthenticatedUser,
+    @DemoSessionId() demoSessionId: string,
   ): GoogleDriveConnectionStatus {
-    return this.googleDriveOAuth.getStatus(user.sub);
+    return this.googleDriveOAuth.getStatus(demoSessionId);
   }
 
   @Delete('disconnect')
-  @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
-  async disconnect(@CurrentUser() user: AuthenticatedUser): Promise<void> {
-    await this.googleDriveOAuth.disconnect(user.sub);
+  async disconnect(
+    @DemoSessionId() demoSessionId: string,
+  ): Promise<void> {
+    await this.googleDriveOAuth.disconnect(demoSessionId);
   }
 
   @Get('items')
-  @UseGuards(AuthGuard)
   async listItems(
-    @CurrentUser() user: AuthenticatedUser,
+    @DemoSessionId() demoSessionId: string,
     @Query('parentId') parentId?: unknown,
   ): Promise<GoogleDriveItem[]> {
     if (parentId !== undefined && typeof parentId !== 'string') {
       throw new BadRequestException('parentId không hợp lệ');
     }
 
-    return this.googleDriveService.listItems(user.sub, parentId);
+    return this.googleDriveService.listItems(demoSessionId, parentId);
   }
 
   @Get('items/:id')
-  @UseGuards(AuthGuard)
   async getItem(
-    @CurrentUser() user: AuthenticatedUser,
+    @DemoSessionId() demoSessionId: string,
     @Param('id') itemId: string,
   ): Promise<GoogleDriveItem> {
-    return this.googleDriveService.getItem(user.sub, itemId);
+    return this.googleDriveService.getItem(demoSessionId, itemId);
   }
 
   private redirectToFrontend(

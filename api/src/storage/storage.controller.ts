@@ -1,10 +1,8 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '../auth/auth.guard';
+import { Controller, Get } from '@nestjs/common';
 import { StorageService } from './storage.service';
 import type { StorageStatus } from './storage.types';
 
 @Controller('storage')
-@UseGuards(AuthGuard)
 export class StorageController {
   constructor(private readonly storageService: StorageService) {}
 

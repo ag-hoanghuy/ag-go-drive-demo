@@ -3,11 +3,8 @@ import {
   Body,
   Controller,
   Post,
-  UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '../auth/auth.guard';
-import { CurrentUser } from '../auth/current-user.decorator';
-import type { AuthenticatedUser } from '../auth/auth.types';
+import { DemoSessionId } from '../demo-session/demo-session-id.decorator';
 import { ImportService } from './import.service';
 import type { GoogleDriveImportResult } from './import.types';
 
@@ -20,9 +17,8 @@ export class ImportController {
   constructor(private readonly importService: ImportService) {}
 
   @Post('google-drive')
-  @UseGuards(AuthGuard)
   async importGoogleDrive(
-    @CurrentUser() user: AuthenticatedUser,
+    @DemoSessionId() demoSessionId: string,
     @Body() body: GoogleDriveImportBody | undefined,
   ): Promise<GoogleDriveImportResult> {
     if (!body || typeof body.itemId !== 'string' || !body.itemId.trim()) {
@@ -30,7 +26,7 @@ export class ImportController {
     }
 
     return this.importService.importGoogleDriveItem(
-      user.sub,
+      demoSessionId,
       body.itemId.trim(),
     );
   }

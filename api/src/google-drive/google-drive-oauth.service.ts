@@ -24,9 +24,9 @@ export class GoogleDriveOAuthService {
     private readonly tokenStore: GoogleDriveTokenStore,
   ) {}
 
-  createAuthorizationUrl(subject: string): GoogleAuthorizationResponse {
+  createAuthorizationUrl(demoSessionId: string): GoogleAuthorizationResponse {
     const oauthClient = this.oauthClientFactory.create();
-    const state = this.stateStore.create(subject);
+    const state = this.stateStore.create(demoSessionId);
     const authorizationUrl = oauthClient.generateAuthUrl({
       access_type: 'offline',
       prompt: 'consent',
@@ -38,16 +38,16 @@ export class GoogleDriveOAuthService {
   }
 
   async completeAuthorization(code: string, state: string): Promise<void> {
-    const subject = this.consumeState(state);
+    const demoSessionId = this.consumeState(state);
     const oauthClient = this.oauthClientFactory.create();
     const { tokens } = await oauthClient.getToken(code);
-    const existingCredentials = this.tokenStore.get(subject);
+    const existingCredentials = this.tokenStore.get(demoSessionId);
 
     if (!tokens.access_token && !tokens.refresh_token) {
       throw new BadRequestException('Google không trả về OAuth token');
     }
 
-    this.tokenStore.save(subject, {
+    this.tokenStore.save(demoSessionId, {
       accessToken: tokens.access_token ?? existingCredentials?.accessToken ?? null,
       refreshToken:
         tokens.refresh_token ?? existingCredentials?.refreshToken ?? null,
@@ -59,12 +59,12 @@ export class GoogleDriveOAuthService {
     this.consumeState(state);
   }
 
-  getStatus(subject: string): GoogleDriveConnectionStatus {
-    return { connected: this.tokenStore.has(subject) };
+  getStatus(demoSessionId: string): GoogleDriveConnectionStatus {
+    return { connected: this.tokenStore.has(demoSessionId) };
   }
 
-  async disconnect(subject: string): Promise<void> {
-    const credentials = this.tokenStore.get(subject);
+  async disconnect(demoSessionId: string): Promise<void> {
+    const credentials = this.tokenStore.get(demoSessionId);
 
     if (!credentials) {
       return;
@@ -80,7 +80,7 @@ export class GoogleDriveOAuthService {
       }
     }
 
-    this.tokenStore.delete(subject);
+    this.tokenStore.delete(demoSessionId);
   }
 
   createFrontendRedirect(result: GoogleCallbackResult): string {
@@ -93,13 +93,13 @@ export class GoogleDriveOAuthService {
   }
 
   private consumeState(state: string): string {
-    const subject = this.stateStore.consume(state);
+    const demoSessionId = this.stateStore.consume(state);
 
-    if (!subject) {
+    if (!demoSessionId) {
       throw new BadRequestException('Google OAuth state không hợp lệ hoặc đã hết hạn');
     }
 
-    return subject;
+    return demoSessionId;
   }
 
 }

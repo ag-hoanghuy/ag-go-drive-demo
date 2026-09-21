@@ -23,10 +23,10 @@ export class GoogleDriveService {
   constructor(private readonly oauthClientFactory: GoogleOAuthClientFactory) {}
 
   async listItems(
-    subject: string,
+    demoSessionId: string,
     parentId?: string,
   ): Promise<GoogleDriveItem[]> {
-    const drive = this.createDriveClient(subject);
+    const drive = this.createDriveClient(demoSessionId);
     const items: GoogleDriveItem[] = [];
     let pageToken: string | undefined;
     const parent = parentId?.trim() || 'root';
@@ -62,8 +62,11 @@ export class GoogleDriveService {
     });
   }
 
-  async getItem(subject: string, itemId: string): Promise<GoogleDriveItem> {
-    const drive = this.createDriveClient(subject);
+  async getItem(
+    demoSessionId: string,
+    itemId: string,
+  ): Promise<GoogleDriveItem> {
+    const drive = this.createDriveClient(demoSessionId);
 
     try {
       const response = await drive.files.get({
@@ -78,7 +81,7 @@ export class GoogleDriveService {
   }
 
   async collectFolderFiles(
-    subject: string,
+    demoSessionId: string,
     folder: GoogleDriveItem,
   ): Promise<GoogleDriveFileEntry[]> {
     const files: GoogleDriveFileEntry[] = [];
@@ -93,7 +96,7 @@ export class GoogleDriveService {
         continue;
       }
 
-      const children = await this.listItems(subject, current.id);
+      const children = await this.listItems(demoSessionId, current.id);
 
       for (const child of children) {
         const pathSegments = [...current.pathSegments, child.name];
@@ -109,8 +112,11 @@ export class GoogleDriveService {
     return files;
   }
 
-  async downloadFile(subject: string, fileId: string): Promise<Readable> {
-    const drive = this.createDriveClient(subject);
+  async downloadFile(
+    demoSessionId: string,
+    fileId: string,
+  ): Promise<Readable> {
+    const drive = this.createDriveClient(demoSessionId);
 
     try {
       const response = await drive.files.get(
@@ -138,10 +144,10 @@ export class GoogleDriveService {
     );
   }
 
-  private createDriveClient(subject: string): drive_v3.Drive {
+  private createDriveClient(demoSessionId: string): drive_v3.Drive {
     return google.drive({
       version: 'v3',
-      auth: this.oauthClientFactory.createForSubject(subject),
+      auth: this.oauthClientFactory.createForSession(demoSessionId),
     });
   }
 

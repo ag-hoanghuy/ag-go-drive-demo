@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 
 interface OAuthStateEntry {
-  subject: string;
+  demoSessionId: string;
   expiresAt: number;
 }
 
@@ -12,12 +12,12 @@ const STATE_TTL_MS = 10 * 60 * 1000;
 export class GoogleOAuthStateStore {
   private readonly states = new Map<string, OAuthStateEntry>();
 
-  create(subject: string): string {
+  create(demoSessionId: string): string {
     this.deleteExpired();
 
     const state = randomBytes(32).toString('base64url');
     this.states.set(state, {
-      subject,
+      demoSessionId,
       expiresAt: Date.now() + STATE_TTL_MS,
     });
 
@@ -32,7 +32,7 @@ export class GoogleOAuthStateStore {
       return undefined;
     }
 
-    return entry.subject;
+    return entry.demoSessionId;
   }
 
   private deleteExpired(): void {
@@ -45,4 +45,3 @@ export class GoogleOAuthStateStore {
     }
   }
 }
-

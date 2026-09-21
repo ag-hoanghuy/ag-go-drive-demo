@@ -20,8 +20,8 @@ export class GoogleOAuthClientFactory {
     );
   }
 
-  createForSubject(subject: string): OAuth2Client {
-    const credentials = this.tokenStore.get(subject);
+  createForSession(demoSessionId: string): OAuth2Client {
+    const credentials = this.tokenStore.get(demoSessionId);
 
     if (!credentials) {
       throw new BadRequestException('Google Drive chưa được kết nối');
@@ -34,7 +34,7 @@ export class GoogleOAuthClientFactory {
       expiry_date: credentials.expiryDate,
     });
     oauthClient.on('tokens', (tokens) => {
-      this.tokenStore.update(subject, {
+      this.tokenStore.update(demoSessionId, {
         ...(tokens.access_token
           ? { accessToken: tokens.access_token }
           : {}),

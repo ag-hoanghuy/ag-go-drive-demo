@@ -27,16 +27,6 @@ body {
   padding: 64px 0;
 }
 
-.configuration-error {
-  width: min(680px, calc(100% - 32px));
-  margin: 0 auto;
-  padding-top: 64px;
-}
-
-.configuration-error h2.ant-typography {
-  margin: 0;
-}
-
 .page-heading {
   gap: 20px;
   margin-bottom: 32px;

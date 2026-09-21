@@ -14,7 +14,6 @@ import type { DriveItem, GoogleDriveImportResult } from './drive.types';
 
 interface DriveImportCardProps {
   apiClient: AxiosInstance;
-  isAuthenticated: boolean;
   driveConnected: boolean;
   storageConfigured: boolean;
 }
@@ -29,7 +28,6 @@ function formatFileSize(size: number | null): string {
 
 export function DriveImportCard({
   apiClient,
-  isAuthenticated,
   driveConnected,
   storageConfigured,
 }: DriveImportCardProps) {
@@ -68,7 +66,7 @@ export function DriveImportCard({
     }
   };
 
-  const canBrowse = isAuthenticated && driveConnected;
+  const canBrowse = driveConnected;
   const canImport = canBrowse && storageConfigured && selectedItem !== null;
 
   return (
@@ -79,7 +77,7 @@ export function DriveImportCard({
             Chọn từ Google Drive
           </Button>
 
-          {!driveConnected && isAuthenticated && (
+          {!driveConnected && (
             <Typography.Text type="secondary">
               Hãy kết nối Google Drive trước khi chọn item.
             </Typography.Text>
@@ -110,7 +108,7 @@ export function DriveImportCard({
             {importing ? 'Đang import...' : 'Import'}
           </Button>
 
-          {!storageConfigured && isAuthenticated && (
+          {!storageConfigured && (
             <Typography.Text type="secondary">
               Cloudflare R2 cần được cấu hình trước khi import.
             </Typography.Text>
@@ -166,4 +164,3 @@ export function DriveImportCard({
     </>
   );
 }
-
