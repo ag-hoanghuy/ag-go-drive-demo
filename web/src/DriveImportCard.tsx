@@ -1,9 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import type { AxiosInstance } from 'axios';
-import {
-  DrivePicker,
-  DrivePickerDocsView,
-} from '@googleworkspace/drive-picker-react';
 import type { DrivePickerProps } from '@googleworkspace/drive-picker-react';
 import { Alert, Button, Card, List, Space, Typography } from 'antd';
 import type { GoogleDriveImportResult } from './drive.types';
@@ -24,14 +20,89 @@ interface SelectedDriveItem {
   mimeType: string;
 }
 
-interface PickerInstance {
-  id: number;
-  accessToken: string;
+interface GoogleApiLoader {
+  load(
+    api: string,
+    config: {
+      callback: () => void;
+      onerror: () => void;
+      timeout: number;
+      ontimeout: () => void;
+    },
+  ): void;
 }
 
 const GOOGLE_DRIVE_FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
+const GOOGLE_API_SCRIPT_URL = 'https://apis.google.com/js/api.js';
+const GOOGLE_PICKER_MAX_ITEMS = 100;
 const pickerAppId = import.meta.env.VITE_GOOGLE_DRIVE_APP_ID?.trim();
 const pickerDeveloperKey = import.meta.env.VITE_GOOGLE_DRIVE_API_KEY?.trim();
+let googlePickerApiPromise: Promise<void> | null = null;
+
+function getGoogleApiLoader(): GoogleApiLoader | undefined {
+  return (window as Window & { gapi?: GoogleApiLoader }).gapi;
+}
+
+function loadGooglePickerApi(): Promise<void> {
+  if (
+    typeof google !== 'undefined' &&
+    typeof google.picker?.PickerBuilder === 'function'
+  ) {
+    return Promise.resolve();
+  }
+
+  if (!googlePickerApiPromise) {
+    googlePickerApiPromise = new Promise<void>((resolve, reject) => {
+      const loadPickerModule = (): void => {
+        const gapi = getGoogleApiLoader();
+        if (!gapi) {
+          reject(new Error('Google API loader không khả dụng.'));
+          return;
+        }
+
+        gapi.load('picker', {
+          callback: resolve,
+          onerror: () => reject(new Error('Không thể tải Google Picker API.')),
+          timeout: 10_000,
+          ontimeout: () =>
+            reject(new Error('Quá thời gian tải Google Picker API.')),
+        });
+      };
+
+      if (getGoogleApiLoader()) {
+        loadPickerModule();
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = GOOGLE_API_SCRIPT_URL;
+      script.async = true;
+      script.onload = loadPickerModule;
+      script.onerror = () =>
+        reject(new Error('Không thể tải Google API script.'));
+      document.head.appendChild(script);
+    }).catch((error: unknown) => {
+      googlePickerApiPromise = null;
+      throw error;
+    });
+  }
+
+  return googlePickerApiPromise;
+}
+
+function createGooglePickerViews(): google.picker.DocsView[] {
+  const createView = (): google.picker.DocsView =>
+    new google.picker.DocsView(google.picker.ViewId.DOCS)
+      .setIncludeFolders(true)
+      .setSelectFolderEnabled(true);
+
+  return [
+    createView().setOwnedByMe(true),
+    createView().setOwnedByMe(false),
+    createView().setStarred(true),
+    createView().setEnableDrives(true),
+  ];
+}
 
 export function DriveImportCard({
   apiClient,
@@ -39,23 +110,26 @@ export function DriveImportCard({
   storageConfigured,
 }: DriveImportCardProps) {
   const [selectedItems, setSelectedItems] = useState<SelectedDriveItem[]>([]);
-  const [pickerInstance, setPickerInstance] = useState<PickerInstance | null>(
-    null,
-  );
   const [openingPicker, setOpeningPicker] = useState(false);
   const [pickerError, setPickerError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<GoogleDriveImportResult | null>(null);
   const [requestError, setRequestError] = useState(false);
-  const pickerSequence = useRef(0);
+  const pickerRef = useRef<google.picker.Picker | null>(null);
 
   useEffect(() => {
     if (!driveConnected) {
       setSelectedItems([]);
-      setPickerInstance(null);
+      pickerRef.current?.dispose();
+      pickerRef.current = null;
       setResult(null);
     }
   }, [driveConnected]);
+
+  const closePicker = (): void => {
+    pickerRef.current?.dispose();
+    pickerRef.current = null;
+  };
 
   const openPicker = async (): Promise<void> => {
     if (!pickerAppId || !pickerDeveloperKey) {
@@ -70,11 +144,44 @@ export function DriveImportCard({
       const response = await apiClient.get<GooglePickerTokenResponse>(
         '/google-drive/picker-token',
       );
-      pickerSequence.current += 1;
-      setPickerInstance({
-        id: pickerSequence.current,
-        accessToken: response.data.accessToken,
-      });
+      await loadGooglePickerApi();
+
+      let pickerBuilder = new google.picker.PickerBuilder()
+        .setAppId(pickerAppId)
+        .setDeveloperKey(pickerDeveloperKey)
+        .setOAuthToken(response.data.accessToken)
+        .setOrigin(window.location.origin)
+        .setTitle('Chọn từ Google Drive')
+        .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
+        .setMaxItems(GOOGLE_PICKER_MAX_ITEMS)
+        .setCallback((data) => {
+          if (data.action === google.picker.Action.PICKED) {
+            handlePicked(
+              new CustomEvent('picker-picked', {
+                detail: data,
+              }),
+            );
+            return;
+          }
+
+          if (data.action === google.picker.Action.CANCEL) {
+            closePicker();
+            return;
+          }
+
+          if (data.action === google.picker.Action.ERROR) {
+            setPickerError('Google Picker gặp lỗi khi chọn dữ liệu.');
+            closePicker();
+          }
+        });
+
+      for (const view of createGooglePickerViews()) {
+        pickerBuilder = pickerBuilder.addView(view);
+      }
+
+      closePicker();
+      pickerRef.current = pickerBuilder.build();
+      pickerRef.current.setVisible(true);
     } catch {
       setPickerError(
         'Không thể mở Google Picker. Hãy kết nối lại Google Drive.',
@@ -110,7 +217,7 @@ export function DriveImportCard({
     setResult(null);
     setRequestError(false);
     setPickerError(null);
-    setPickerInstance(null);
+    closePicker();
   };
 
   const removeItem = (itemId: string): void => {
@@ -158,6 +265,11 @@ export function DriveImportCard({
           Chọn từ Google Drive
         </Button>
 
+        <Typography.Text type="secondary">
+          Có thể chọn nhiều file bằng Ctrl + Click (Windows) hoặc Cmd + Click
+          (macOS).
+        </Typography.Text>
+
         {!driveConnected && (
           <Typography.Text type="secondary">
             Hãy kết nối Google Drive trước khi chọn item.
@@ -176,7 +288,7 @@ export function DriveImportCard({
               </Typography.Text>
             }
             dataSource={selectedItems}
-            renderItem={(item) => (
+            renderItem={(item, index) => (
               <List.Item
                 actions={[
                   <Button
@@ -192,7 +304,7 @@ export function DriveImportCard({
                 ]}
               >
                 <List.Item.Meta
-                  title={item.name}
+                  title={`${index + 1}. ${item.name}`}
                   description={
                     item.mimeType === GOOGLE_DRIVE_FOLDER_MIME_TYPE
                       ? 'Folder'
@@ -261,30 +373,6 @@ export function DriveImportCard({
           />
         )}
 
-        {pickerInstance && pickerAppId && pickerDeveloperKey && (
-          <DrivePicker
-            key={pickerInstance.id}
-            app-id={pickerAppId}
-            developer-key={pickerDeveloperKey}
-            oauth-token={pickerInstance.accessToken}
-            origin={window.location.origin}
-            multiselect
-            title="Chọn từ Google Drive"
-            onPicked={handlePicked}
-            onCanceled={() => setPickerInstance(null)}
-            onOauthError={() => {
-              setPickerError('Google Picker không thể xác thực.');
-              setPickerInstance(null);
-            }}
-          >
-            <DrivePickerDocsView
-              view-id="DOCS"
-              enable-drives="true"
-              include-folders="true"
-              select-folder-enabled="true"
-            />
-          </DrivePicker>
-        )}
       </Space>
     </Card>
   );
