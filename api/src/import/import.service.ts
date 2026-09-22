@@ -1,9 +1,6 @@
 import type { Readable } from 'node:stream';
 import { Injectable } from '@nestjs/common';
-import {
-  GoogleDriveService,
-  GOOGLE_DRIVE_FOLDER_MIME_TYPE,
-} from '../google-drive/google-drive.service';
+import { GoogleDriveService } from '../google-drive/google-drive.service';
 import type { GoogleDriveFileEntry } from '../google-drive/google-drive.types';
 import { StorageService } from '../storage/storage.service';
 import type {
@@ -27,25 +24,40 @@ export class ImportService {
     private readonly storageService: StorageService,
   ) {}
 
-  async importGoogleDriveItem(
+  async importGoogleDriveItems(
     demoSessionId: string,
-    itemId: string,
+    itemIds: string[],
   ): Promise<GoogleDriveImportResult> {
     this.storageService.ensureConfigured();
 
-    const selectedItem = await this.googleDriveService.getItem(
-      demoSessionId,
-      itemId,
-    );
-    const type = selectedItem.mimeType === GOOGLE_DRIVE_FOLDER_MIME_TYPE
-      ? 'folder'
-      : 'file';
-    const entries = selectedItem.isFolder
-      ? await this.googleDriveService.collectFolderFiles(
+    const uniqueItemIds = [...new Set(itemIds)];
+    const selectionErrors: ImportFileError[] = [];
+    const collectedEntries: GoogleDriveFileEntry[] = [];
+
+    for (const itemId of uniqueItemIds) {
+      try {
+        const selectedItem = await this.googleDriveService.getItem(
           demoSessionId,
-          selectedItem,
-        )
-      : [{ item: selectedItem, pathSegments: [selectedItem.name] }];
+          itemId,
+        );
+        const entries = selectedItem.isFolder
+          ? await this.googleDriveService.collectFolderFiles(
+              demoSessionId,
+              selectedItem,
+            )
+          : [{ item: selectedItem, pathSegments: [selectedItem.name] }];
+
+        collectedEntries.push(...entries);
+      } catch {
+        selectionErrors.push({
+          driveFileId: itemId,
+          name: itemId,
+          reason: 'Không thể đọc item đã chọn',
+        });
+      }
+    }
+
+    const entries = this.createUniqueEntries(collectedEntries);
     const outcomes = await this.mapWithConcurrency(
       entries,
       IMPORT_CONCURRENCY,
@@ -54,18 +66,74 @@ export class ImportService {
     const files = outcomes.flatMap((outcome) =>
       outcome.file ? [outcome.file] : [],
     );
-    const errors = outcomes.flatMap((outcome) =>
-      outcome.error ? [outcome.error] : [],
-    );
+    const errors = [
+      ...selectionErrors,
+      ...outcomes.flatMap((outcome) =>
+        outcome.error ? [outcome.error] : [],
+      ),
+    ];
 
     return {
-      type,
-      totalFiles: entries.length,
+      selectedItems: uniqueItemIds.length,
+      totalFiles: entries.length + selectionErrors.length,
       uploaded: files.length,
       failed: errors.length,
       files,
       errors,
     };
+  }
+
+  private createUniqueEntries(
+    entries: GoogleDriveFileEntry[],
+  ): GoogleDriveFileEntry[] {
+    const entriesByFileId = new Map<string, GoogleDriveFileEntry>();
+
+    for (const entry of entries) {
+      if (!entriesByFileId.has(entry.item.id)) {
+        entriesByFileId.set(entry.item.id, entry);
+      }
+    }
+
+    const usedKeys = new Set<string>();
+
+    return [...entriesByFileId.values()].map((entry) => {
+      if (this.googleDriveService.isGoogleNativeFile(entry.item)) {
+        return entry;
+      }
+
+      let pathSegments = entry.pathSegments;
+      let key = this.storageService.createObjectKey(pathSegments);
+      let attempt = 1;
+
+      while (usedKeys.has(key)) {
+        pathSegments = this.addCollisionSuffix(entry, attempt);
+        key = this.storageService.createObjectKey(pathSegments);
+        attempt += 1;
+      }
+
+      usedKeys.add(key);
+      return { ...entry, pathSegments };
+    });
+  }
+
+  private addCollisionSuffix(
+    entry: GoogleDriveFileEntry,
+    attempt: number,
+  ): string[] {
+    const originalName = entry.pathSegments.at(-1) ?? entry.item.name;
+    const dotIndex = originalName.lastIndexOf('.');
+    const hasExtension = dotIndex > 0;
+    const baseName = hasExtension
+      ? originalName.slice(0, dotIndex)
+      : originalName;
+    const extension = hasExtension
+      ? originalName.slice(dotIndex, dotIndex + 31)
+      : '';
+    const safeId = entry.item.id.replace(/[^a-zA-Z0-9_-]/g, '').slice(-12);
+    const attemptSuffix = attempt > 1 ? `-${attempt}` : '';
+    const uniqueName = `${baseName.slice(0, 120)}--${safeId || 'file'}${attemptSuffix}${extension}`;
+
+    return [...entry.pathSegments.slice(0, -1), uniqueName];
   }
 
   private async importFile(

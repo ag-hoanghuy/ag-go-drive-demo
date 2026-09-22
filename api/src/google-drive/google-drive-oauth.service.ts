@@ -1,7 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleOAuthClientFactory } from './google-oauth-client.factory';
 import { GoogleDriveTokenStore } from './google-drive-token.store';
@@ -9,6 +6,7 @@ import type {
   GoogleAuthorizationResponse,
   GoogleCallbackResult,
   GoogleDriveConnectionStatus,
+  GooglePickerTokenResponse,
 } from './google-drive.types';
 import { GoogleOAuthStateStore } from './google-oauth-state.store';
 
@@ -63,6 +61,26 @@ export class GoogleDriveOAuthService {
     return { connected: this.tokenStore.has(demoSessionId) };
   }
 
+  async getPickerToken(
+    demoSessionId: string,
+  ): Promise<GooglePickerTokenResponse> {
+    try {
+      const oauthClient =
+        this.oauthClientFactory.createForSession(demoSessionId);
+      const { token } = await oauthClient.getAccessToken();
+
+      if (!token) {
+        throw new Error('Missing access token');
+      }
+
+      return { accessToken: token };
+    } catch {
+      throw new BadRequestException(
+        'Không thể cấp token cho Google Picker. Hãy kết nối lại Google Drive.',
+      );
+    }
+  }
+
   async disconnect(demoSessionId: string): Promise<void> {
     const credentials = this.tokenStore.get(demoSessionId);
 
@@ -101,5 +119,4 @@ export class GoogleDriveOAuthService {
 
     return demoSessionId;
   }
-
 }

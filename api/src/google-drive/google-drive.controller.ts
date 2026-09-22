@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   HttpCode,
   HttpStatus,
   Param,
@@ -16,6 +17,7 @@ import type {
   GoogleAuthorizationResponse,
   GoogleDriveConnectionStatus,
   GoogleDriveItem,
+  GooglePickerTokenResponse,
 } from './google-drive.types';
 
 interface OAuthRedirectResponse {
@@ -66,6 +68,14 @@ export class GoogleDriveController {
     @DemoSessionId() demoSessionId: string,
   ): GoogleDriveConnectionStatus {
     return this.googleDriveOAuth.getStatus(demoSessionId);
+  }
+
+  @Get('picker-token')
+  @Header('Cache-Control', 'no-store')
+  pickerToken(
+    @DemoSessionId() demoSessionId: string,
+  ): Promise<GooglePickerTokenResponse> {
+    return this.googleDriveOAuth.getPickerToken(demoSessionId);
   }
 
   @Delete('disconnect')

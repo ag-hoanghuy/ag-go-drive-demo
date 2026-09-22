@@ -9,7 +9,7 @@ import { ImportService } from './import.service';
 import type { GoogleDriveImportResult } from './import.types';
 
 interface GoogleDriveImportBody {
-  itemId?: unknown;
+  itemIds?: unknown;
 }
 
 @Controller('import')
@@ -21,13 +21,22 @@ export class ImportController {
     @DemoSessionId() demoSessionId: string,
     @Body() body: GoogleDriveImportBody | undefined,
   ): Promise<GoogleDriveImportResult> {
-    if (!body || typeof body.itemId !== 'string' || !body.itemId.trim()) {
-      throw new BadRequestException('itemId không hợp lệ');
+    if (!body || !Array.isArray(body.itemIds) || body.itemIds.length === 0) {
+      throw new BadRequestException('itemIds phải là array không rỗng');
     }
 
-    return this.importService.importGoogleDriveItem(
-      demoSessionId,
-      body.itemId.trim(),
-    );
+    if (
+      body.itemIds.some(
+        (itemId) => typeof itemId !== 'string' || !itemId.trim(),
+      )
+    ) {
+      throw new BadRequestException('itemIds chứa ID không hợp lệ');
+    }
+
+    const itemIds = [
+      ...new Set(body.itemIds.map((itemId) => (itemId as string).trim())),
+    ];
+
+    return this.importService.importGoogleDriveItems(demoSessionId, itemIds);
   }
 }

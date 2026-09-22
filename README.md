@@ -17,6 +17,15 @@ Google Drive OAuth cần một Google OAuth Web Client, bật Google Drive API v
 http://localhost:4000/api/google-drive/callback
 ```
 
+Google Picker trên frontend dùng lại access token ngắn hạn của OAuth backend theo demo session. Bật Google Picker API trong cùng Google Cloud project, sau đó cấu hình:
+
+```text
+VITE_GOOGLE_DRIVE_APP_ID=<Google Cloud project number>
+VITE_GOOGLE_DRIVE_API_KEY=<API key đã giới hạn cho Google Picker API và origin frontend>
+```
+
+Frontend không lưu hoặc nhận Google refresh token.
+
 ## Chạy backend
 
 ```bash

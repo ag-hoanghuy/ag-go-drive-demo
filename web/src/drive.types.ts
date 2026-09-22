@@ -1,13 +1,3 @@
-export interface DriveItem {
-  id: string;
-  name: string;
-  mimeType: string;
-  isFolder: boolean;
-  size: number | null;
-  modifiedTime: string | null;
-  iconLink: string | null;
-}
-
 export interface ImportedFile {
   driveFileId: string;
   name: string;
@@ -23,11 +13,10 @@ export interface ImportFileError {
 }
 
 export interface GoogleDriveImportResult {
-  type: 'file' | 'folder';
+  selectedItems: number;
   totalFiles: number;
   uploaded: number;
   failed: number;
   files: ImportedFile[];
   errors: ImportFileError[];
 }
-

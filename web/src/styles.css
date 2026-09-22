@@ -51,43 +51,6 @@ body {
   margin-bottom: 20px;
 }
 
-.drive-browser-loading {
-  display: grid;
-  min-height: 220px;
-  place-items: center;
-}
-
-.drive-browser-list {
-  max-height: 460px;
-  overflow-y: auto;
-}
-
-.drive-browser-list .ant-list-item {
-  padding-inline: 16px;
-}
-
-.drive-browser-list .selected-item {
-  background: #eaf4ff;
-}
-
-.drive-browser-list .ant-list-item-meta-title .ant-btn-link,
-.breadcrumb-button {
-  height: auto;
-  padding: 0;
-}
-
-.drive-item-icon,
-.drive-item-fallback-icon {
-  display: grid;
-  width: 24px;
-  height: 24px;
-  place-items: center;
-}
-
-.drive-item-icon {
-  object-fit: contain;
-}
-
 @media (max-width: 575px) {
   .content {
     padding: 36px 0;

@@ -436,6 +436,18 @@
     "@eslint/core" "^0.17.0"
     levn "^0.4.1"
 
+"@googleworkspace/drive-picker-element@0.7.3":
+  version "0.7.3"
+  resolved "https://registry.yarnpkg.com/@googleworkspace/drive-picker-element/-/drive-picker-element-0.7.3.tgz#79ba01847a17490c477003f3aef0cf935108b7ac"
+  integrity sha512-z1hZh1HsPAQ19lencw2x3FcUVoymWYexcWgq66iXum4mUfWWaQ37oGtQ6hGvM8dyrC81G79P26gq7HhRtbGb2Q==
+
+"@googleworkspace/drive-picker-react@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@googleworkspace/drive-picker-react/-/drive-picker-react-0.2.0.tgz#806688a7a88ab365c65e3e9ff74b6e2f97c3727a"
+  integrity sha512-3CIEZ7U+HDKd8UoXG3l/fPSZFhxajC3MYNIqAZQSba2totuYKVTQMOJsgonO7OnnJq88YD35n7whCF4i5QUyvA==
+  dependencies:
+    "@googleworkspace/drive-picker-element" "0.7.3"
+
 "@humanfs/core@^0.19.2":
   version "0.19.2"
   resolved "https://registry.yarnpkg.com/@humanfs/core/-/core-0.19.2.tgz#a8272ca03b2acf492670222b2320b6c421bfde60"
@@ -753,6 +765,11 @@
   version "1.0.9"
   resolved "https://registry.yarnpkg.com/@types/estree/-/estree-1.0.9.tgz#cf3f0e876d7bee15a93ab925b82bf570a3904a24"
   integrity sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==
+
+"@types/google.picker@^0.0.49":
+  version "0.0.49"
+  resolved "https://registry.yarnpkg.com/@types/google.picker/-/google.picker-0.0.49.tgz#8b655eab8a20da7928d1b71d8cb6346045c0416c"
+  integrity sha512-3zsvP7kEMrPfgDnc4TQ8CuTQsojfD5f793WW65NS0q+79i70CRZ3J4hPWoKjzrJ+toIdy1727IdlxVsAvpkOFg==
 
 "@types/json-schema@^7.0.15":
   version "7.0.15"

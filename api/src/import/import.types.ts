@@ -13,11 +13,10 @@ export interface ImportFileError {
 }
 
 export interface GoogleDriveImportResult {
-  type: 'file' | 'folder';
+  selectedItems: number;
   totalFiles: number;
   uploaded: number;
   failed: number;
   files: ImportedFile[];
   errors: ImportFileError[];
 }
-

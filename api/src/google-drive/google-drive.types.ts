@@ -12,6 +12,10 @@ export interface GoogleAuthorizationResponse {
   authorizationUrl: string;
 }
 
+export interface GooglePickerTokenResponse {
+  accessToken: string;
+}
+
 export type GoogleCallbackResult = 'connected' | 'error';
 
 export interface GoogleDriveItem {
