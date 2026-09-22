@@ -240,6 +240,7 @@ export function DriveImportCard({
         { itemIds: selectedItems.map((item) => item.id) },
       );
       setResult(response.data);
+      setSelectedItems([]);
     } catch {
       setRequestError(true);
     } finally {
